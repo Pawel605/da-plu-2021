@@ -23,7 +23,7 @@ def test_hello_name():
 def test_hello_name(name):
     response = client.get(f"/hello/{name}")
     assert response.status_code == 200
-    assert response.text == f'"Hello {name}"'
+    assert response.json() == {"msg": f"Hello {name}"}
 
 
 def test_counter():
