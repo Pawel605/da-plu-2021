@@ -30,8 +30,8 @@ username = "4dm1n"
 password = "NotSoSecurePa$$"
 app.session_secret_key = "very constant and random secret, best 64+ characters"
 app.token_secret_key = "another very constant and random secret with random numbers 3985020104"
-app.session_token = None
-app.token = None
+app.session_token = []
+app.token = []
 
 
 @app.post("/login_session", status_code=status.HTTP_201_CREATED)
@@ -41,7 +41,9 @@ def login_session(response: Response, credentials: HTTPBasicCredentials = Depend
 
     if correct_username and correct_password:
         session_token = sha256(f"{username}{password}{app.session_secret_key}".encode()).hexdigest()
-        app.session_token = session_token
+        if len(app.session_token) == 3:
+            app.session_token.pop(0)
+        app.session_token.append(session_token)
         response.set_cookie(key="session_token", value=session_token)
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
@@ -53,7 +55,9 @@ def login_token(credentials: HTTPBasicCredentials = Depends(security)):
     correct_password = compare_digest(credentials.password, password)
     if correct_username and correct_password:
         token_value = sha256(f"{username}{password}{app.token_secret_key}".encode()).hexdigest()
-        app.token = token_value
+        if len(app.token) == 3:
+            app.token.pop(0)
+        app.token.append(token_value)
         return {"token": token_value}
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
@@ -92,7 +96,7 @@ def logout_session(format: str = "", session_token: str = Cookie(None)):
     if session_token not in app.session_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    app.session_token = None
+    app.session_token.remove(session_token)
     url = "/logged_out?format=" + format
     return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
 
@@ -102,6 +106,6 @@ def logout_token(format: str = "", token: str = ""):
     if token == "" or token not in app.token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    app.token = None
+    app.token.remove(token)
     url = "/logged_out?format=" + format
     return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
