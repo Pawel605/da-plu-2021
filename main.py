@@ -4,7 +4,7 @@ from fastapi import FastAPI, Response, status, Depends, Request, Query, Cookie, 
 from fastapi.responses import PlainTextResponse
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
 from pydantic import BaseModel
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from datetime import date
 from secrets import compare_digest
 
@@ -30,8 +30,8 @@ username = "4dm1n"
 password = "NotSoSecurePa$$"
 app.session_secret_key = "very constant and random secret, best 64+ characters"
 app.token_secret_key = "another very constant and random secret with random numbers 3985020104"
-app.session_token = None
-app.token = None
+app.session_token = []
+app.token = []
 
 
 @app.post("/login_session", status_code=status.HTTP_201_CREATED)
@@ -82,3 +82,26 @@ def welcome_token(token: str, format: str = ""):
         return HTMLResponse(content="<h1>Welcome!</h1>")
     else:
         return PlainTextResponse(content="Welcome!")
+
+
+# task 3.4
+
+
+@app.delete("/logout_session")
+def logout_session(format: str = "", session_token: str = Cookie(None)):
+    if session_token not in app.session_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    app.session_token.remove(session_token)
+    url = "/logged_out?format=" + format
+    return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.delete("/logout_token")
+def logout_token(format: str = "", token: str = ""):
+    if token == "" or token not in app.token:
+        raise HTTPException(status_code=401)
+
+    app.token.remove(token)
+    url = "/logged_out?format=" + format
+    return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
