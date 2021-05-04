@@ -30,8 +30,8 @@ username = "4dm1n"
 password = "NotSoSecurePa$$"
 app.session_secret_key = "very constant and random secret, best 64+ characters"
 app.token_secret_key = "another very constant and random secret with random numbers 3985020104"
-app.session_token = []
-app.token = []
+app.session_token = None
+app.token = None
 
 
 @app.post("/login_session", status_code=status.HTTP_201_CREATED)
@@ -92,7 +92,7 @@ def logout_session(format: str = "", session_token: str = Cookie(None)):
     if session_token not in app.session_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    app.session_token.remove(session_token)
+    app.session_token = None
     url = "/logged_out?format=" + format
     return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
 
@@ -102,6 +102,6 @@ def logout_token(format: str = "", token: str = ""):
     if token == "" or token not in app.token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    app.token.remove(token)
+    app.token = None
     url = "/logged_out?format=" + format
     return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
