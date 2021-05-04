@@ -100,7 +100,7 @@ def logout_session(format: str = "", session_token: str = Cookie(None)):
 @app.delete("/logout_token")
 def logout_token(format: str = "", token: str = ""):
     if token == "" or token not in app.token:
-        raise HTTPException(status_code=401)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     app.token.remove(token)
     url = "/logged_out?format=" + format
