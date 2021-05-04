@@ -1,6 +1,7 @@
 from hashlib import sha256
 
 from fastapi import FastAPI, Response, status, Depends, Request, Query, Cookie, HTTPException
+from fastapi.responses import PlainTextResponse
 from fastapi.security import HTTPBasicCredentials, HTTPBasic
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
@@ -57,4 +58,27 @@ def login_token(credentials: HTTPBasicCredentials = Depends(security)):
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
+
 # task 3.3
+@app.get("/welcome_session", status_code=status.HTTP_200_OK)
+def welcome_session(session_token: str = Cookie(None), format: str = ""):
+    if (session_token not in app.session_token) or (session_token == ""):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorised")
+    if format == "json":
+        return {"message": "Welcome!"}
+    elif format == "html":
+        return HTMLResponse(content="<h1>Welcome!</h1>")
+    else:
+        return PlainTextResponse(content="Welcome!")
+
+
+@app.get("/welcome_token", status_code=status.HTTP_200_OK)
+def welcome_token(token: str, format: str = ""):
+    if (token not in app.token) or (token == ""):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorised")
+    if format == "json":
+        return {"message": "Welcome!"}
+    elif format == "html":
+        return HTMLResponse(content="<h1>Welcome!</h1>")
+    else:
+        return PlainTextResponse(content="Welcome!")
