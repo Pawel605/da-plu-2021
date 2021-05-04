@@ -1,11 +1,7 @@
 from fastapi import FastAPI, Response, Request, Query, Cookie, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
 from fastapi.responses import HTMLResponse
-from fastapi_mako import FastAPIMako
-from fastapi.templating import Jinja2Templates
-import hashlib
-from datetime import date, timedelta
+from datetime import date
 
 app = FastAPI()
 app.counter = 0
