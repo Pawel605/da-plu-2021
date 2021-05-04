@@ -109,3 +109,14 @@ def logout_token(format: str = "", token: str = ""):
     app.token.remove(token)
     url = "/logged_out?format=" + format
     return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
+
+
+# task 3.5
+@app.get("/logged_out")
+def logged_out(format: str = ""):
+    if format == "json":
+        return {"message": "Logged out!"}
+    elif format == "html":
+        return HTMLResponse(content="<h1>Logged out!</h1>", status_code=status.HTTP_200_OK)
+    else:
+        return PlainTextResponse(content="Logged out!", status_code=status.HTTP_200_OK)
