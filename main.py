@@ -31,7 +31,7 @@ async def categories():
 async def customers():
     app.db_connection.row_factory = sqlite3.Row
     data = app.db_connection.execute('''
-    SELECT CustomerID, CompanyName, Address, PostalCode, City, Country FROM Customers;
+    SELECT CustomerID, CompanyName, Address, PostalCode, City, Country FROM Customers ORDER BY CustomerID;
     ''').fetchall()
     return {
         "customers": [
