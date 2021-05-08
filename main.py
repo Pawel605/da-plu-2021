@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, HTTPException
 import sqlite3
 
 app = FastAPI()
@@ -43,3 +43,17 @@ async def customers():
                 "name": x['name'],
                 "full_address": x['full_address']} for x in data]}
 
+
+# task 4.2
+
+@app.get("/products/{product_id}", status_code=status.HTTP_200_OK)
+async def single_product(product_id: int):
+    app.db_connection.row_factory = sqlite3.Row
+    data = app.db_connection.execute(
+        "SELECT ProductID, ProductName FROM Products WHERE ProductID = :product_id",
+        {'product_id': product_id}).fetchone()
+
+    if data:
+        return {"id": data["ProductID"], "name": data["ProductName"]}
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
