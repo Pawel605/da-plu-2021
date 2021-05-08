@@ -15,6 +15,8 @@ async def shutdown():
     app.db_connection.close()
 
 
+# task 4.1
+
 @app.get("/categories", status_code=status.HTTP_200_OK)
 async def categories():
     app.db_connection.row_factory = sqlite3.Row
@@ -31,13 +33,15 @@ async def categories():
 async def customers():
     app.db_connection.row_factory = sqlite3.Row
     data = app.db_connection.execute('''
-    SELECT CustomerID, CompanyName, Address, PostalCode, City, Country FROM Customers ORDER BY CustomerID;
+    SELECT CustomerID, COALESCE(CompanyName, '') AS name, COALESCE(Address, '') || ' ' || COALESCE(PostalCode, '') || 
+    ' ' || COALESCE(City, '') || ' ' || COALESCE(Country, '') AS full_address FROM Customers ORDER BY CustomerID;
     ''').fetchall()
     return {
         "customers": [
             {
                 "id": x['CustomerID'],
-                "name": x['CompanyName'],
-                "full_address": f"{x['Address']} {x['PostalCode']} {x['City']} {x['Country']}"} for x in data]}
+                "name": x['name'],
+                "full_address": x['full_address']} for x in data]}
+
 
 
