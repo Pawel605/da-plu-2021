@@ -34,7 +34,7 @@ async def customers():
     app.db_connection.row_factory = sqlite3.Row
     data = app.db_connection.execute('''
     SELECT CustomerID, COALESCE(CompanyName, '') AS name, (COALESCE(Address, '') || ' ' || COALESCE(PostalCode, '') || 
-    ' ' || COALESCE(City, '') || ' ' || COALESCE(Country, '')) AS full_address FROM Customers ORDER BY CustomerID;
+    ' ' || COALESCE(City, '') || ' ' || COALESCE(Country, '')) AS full_address FROM Customers ORDER BY UPPER(CustomerID);
     ''').fetchall()
     return {
         "customers": [
