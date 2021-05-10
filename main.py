@@ -75,7 +75,7 @@ async def employees(limit: int = -1, offset: int = 0, order: str = 'EmployeeID')
                         FROM Employees 
                         ORDER BY {order}
                         LIMIT ? 
-                        OFFSET ?''', (limit, offset)).fetchall()
+                        OFFSET ?;''', (limit, offset)).fetchall()
 
     return {
         "employees": [
@@ -84,3 +84,24 @@ async def employees(limit: int = -1, offset: int = 0, order: str = 'EmployeeID')
                 "last_name": x['LastName'],
                 "first_name": x['FirstName'],
                 "city": x['City']} for x in data]}
+
+
+# task 4.4
+
+@app.get("/products_extended", status_code=status.HTTP_200_OK)
+async def products_extended():
+    app.db_connection.row_factory = sqlite3.Row
+    data = app.db_connection.execute('''
+    SELECT Products.ProductID, Products.ProductName, Categories.CategoryName, Suppliers.CompanyName 
+    FROM Products
+    JOIN Suppliers ON Products.SupplierID = Suppliers.SupplierID
+    JOIN Categories ON Products.CategoryID = Categories.CategoryID;
+    ''').fetchall()
+
+    return {
+        "products_extended":[
+                {
+                    "id": x['ProductID'],
+                    "name": x['ProductName'],
+                    "category": x['CategoryName'],
+                    "supplier": x['CompanyName']} for x in data]}
