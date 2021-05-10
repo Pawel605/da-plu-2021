@@ -57,3 +57,27 @@ async def single_product(product_id: int):
         return {"id": data["ProductID"], "name": data["ProductName"]}
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+# task 4.3
+
+@app.get("/employees", status_code=status.HTTP_200_OK)
+async def employees(limit: int, offset: int, order: str = 'EmployeeID'):
+    if order not in ["EmployeeID", "first_name", "last_name", "city"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+
+    app.db_connection.row_factory = sqlite3.Row
+    data = app.db_connection.execute(f'''
+                    SELECT EmployeeID, LastName, FirstName, City 
+                    FROM Employees
+                    ORDER BY :order
+                    LIMIT :limit OFFSET :offset;
+                    ''',{'order': order, 'limit': limit, 'offset': offset}).fetchall()
+
+    return {
+        "employees": [
+            {
+                "id": x['EmployeeID'],
+                "last_name": x['LastName'],
+                "first_name": x['FirstName'],
+                "city": x['City']} for x in data]}
