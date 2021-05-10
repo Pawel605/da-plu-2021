@@ -63,16 +63,19 @@ async def single_product(product_id: int):
 
 @app.get("/employees", status_code=status.HTTP_200_OK)
 async def employees(limit: int, offset: int, order: str = 'EmployeeID'):
-    if order not in ["EmployeeID", "first_name", "last_name", "city"]:
+
+    dict_orders = {'EmployeeID': 'EmployeeID', 'first_name': 'FirstName', 'last_name': 'LastName', 'city': 'City'}
+    if order not in dict_orders.keys():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    order = dict_orders[order]
 
     app.db_connection.row_factory = sqlite3.Row
     data = app.db_connection.execute(f'''
-                    SELECT EmployeeID, LastName, FirstName, City 
-                    FROM Employees
-                    ORDER BY :order
-                    LIMIT :limit OFFSET :offset;
-                    ''',{'order': order, 'limit': limit, 'offset': offset}).fetchall()
+                        SELECT EmployeeID, LastName, FirstName, City
+                        FROM Employees 
+                        ORDER BY {order}
+                        LIMIT ? 
+                        OFFSET ?''', (limit, offset)).fetchall()
 
     return {
         "employees": [
