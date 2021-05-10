@@ -62,7 +62,7 @@ async def single_product(product_id: int):
 # task 4.3
 
 @app.get("/employees", status_code=status.HTTP_200_OK)
-async def employees(limit: int, offset: int, order: str = 'EmployeeID'):
+async def employees(limit: int = -1, offset: int = 0, order: str = 'EmployeeID'):
 
     dict_orders = {'EmployeeID': 'EmployeeID', 'first_name': 'FirstName', 'last_name': 'LastName', 'city': 'City'}
     if order not in dict_orders.keys():
