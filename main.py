@@ -1,5 +1,6 @@
 from fastapi import FastAPI, status, HTTPException
 import sqlite3
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -134,3 +135,51 @@ async def get_orders_by_id_product(product_id: int):
                 "customer": x["CompanyName"],
                 "quantity": x["Quantity"],
                 "total_price": x["total_price"]} for x in orders]}
+
+
+# task 4.6
+
+class Category(BaseModel):
+    name: str
+
+
+@app.post("/categories", status_code=status.HTTP_201_CREATED)
+async def categories_add(category: Category):
+    cursor = app.db_connection.execute(
+        "INSERT INTO Categories (CategoryName) VALUES (?)", (category.name, ))
+    app.db_connection.commit()
+    new_category_id = cursor.lastrowid
+    app.db_connection.row_factory = sqlite3.Row
+    category = app.db_connection.execute(
+        """SELECT CategoryID AS id, CategoryName AS name
+         FROM Categories WHERE CategoryID = ?""",
+        (new_category_id, )).fetchone()
+
+    return category
+
+
+@app.put("/categories/{category_id}", status_code=status.HTTP_200_OK)
+async def category_update(category: Category, category_id: int):
+    cursor = app.db_connection.execute("""UPDATE Categories 
+                                          SET CategoryName = ? 
+                                          WHERE CategoryID = ?""", (category.name, category_id))
+    app.db_connection.commit()
+    cursor.row_factory = sqlite3.Row
+    created_category = cursor.execute("""SELECT CategoryID AS id, CategoryName AS name 
+                                         FROM Categories
+                                         WHERE CategoryID = :id""", {"id": category_id}).fetchone()
+    if created_category:
+        return created_category
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+@app.delete("/categories/{category_id}", status_code=status.HTTP_200_OK)
+async def category_delete(category_id: int):
+    cursor = app.db_connection.execute(
+        "DELETE FROM Categories WHERE CategoryID = ?;", (category_id, )
+    )
+    app.db_connection.commit()
+
+    if cursor.rowcount < 1:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return {"deleted": cursor.rowcount}
