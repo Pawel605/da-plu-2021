@@ -105,3 +105,32 @@ async def products_extended():
                     "name": x['ProductName'],
                     "category": x['CategoryName'],
                     "supplier": x['CompanyName']} for x in data]}
+
+
+# task 4.5
+
+@app.get("/products/{product_id}/orders", status_code=status.HTTP_200_OK)
+async def get_orders_by_id_product(product_id: int):
+    app.db_connection.row_factory = sqlite3.Row
+    product = app.db_connection.execute(
+        "SELECT ProductID FROM Products WHERE ProductID = :product_id;", {'product_id': product_id}).fetchone()
+    if not product:
+        raise HTTPException(status_code=404, detail="Id not found")
+
+    orders = app.db_connection.execute(f'''
+        SELECT Orders.OrderID, Customers.CompanyName, od.Quantity, 
+        ROUND((od.UnitPrice * od.Quantity) - (od.Discount * od.UnitPrice * od.Quantity), 2) AS total_price 
+        FROM Orders JOIN 'Order Details' AS od on Orders.OrderID = od.OrderID 
+        JOIN Products on od.ProductID = Products.ProductID
+        LEFT JOIN Customers on Orders.CustomerID = Customers.CustomerID 
+        WHERE Products.ProductID = {product_id} 
+        ORDER BY Orders.OrderID;
+        ''').fetchall()
+
+    return {
+        "orders": [
+            {
+                "id": x["OrderID"],
+                "customer": x["CompanyName"],
+                "quantity": x["Quantity"],
+                "total_price": x["total_price"]} for x in orders]}
