@@ -158,25 +158,25 @@ async def categories_add(category: Category):
     return category
 
 
-@app.put("/categories/{category_id}", status_code=status.HTTP_200_OK)
-async def category_update(category: Category, category_id: int):
+@app.put("/categories/{id}", status_code=status.HTTP_200_OK)
+async def category_update(category: Category, id: int):
     cursor = app.db_connection.execute("""UPDATE Categories 
                                           SET CategoryName = ? 
-                                          WHERE CategoryID = ?""", (category.name, category_id))
+                                          WHERE CategoryID = ?""", (category.name, id))
     app.db_connection.commit()
     cursor.row_factory = sqlite3.Row
     created_category = cursor.execute("""SELECT CategoryID AS id, CategoryName AS name 
                                          FROM Categories
-                                         WHERE CategoryID = :id""", {"id": category_id}).fetchone()
+                                         WHERE CategoryID = :id""", {"id": id}).fetchone()
     if created_category:
         return created_category
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
-@app.delete("/categories/{category_id}", status_code=status.HTTP_200_OK)
-async def category_delete(category_id: int):
+@app.delete("/categories/{id}", status_code=status.HTTP_200_OK)
+async def category_delete(id: int):
     cursor = app.db_connection.execute(
-        "DELETE FROM Categories WHERE CategoryID = ?;", (category_id, )
+        "DELETE FROM Categories WHERE CategoryID = ?;", (id, )
     )
     app.db_connection.commit()
 
