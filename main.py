@@ -90,7 +90,7 @@ def create_patient(patient: Patient):
     return patient
 
 
-@app.get("/patient/{patient_id}")
+@app.get("/patient/{patient_id}", status_code=200)
 def show_patient(patient_id: int):
     if patient_id < 1:
         raise HTTPException(status_code=400, detail="Invalid patient id")
