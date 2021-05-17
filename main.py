@@ -1,185 +1,101 @@
-from fastapi import FastAPI, status, HTTPException
-import sqlite3
+import hashlib
+from datetime import date, datetime, timedelta
+from typing import Dict, Optional
+
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-app = FastAPI()
 
-
-@app.on_event("startup")
-async def startup():
-    app.db_connection = sqlite3.connect("northwind.db")
-    app.db_connection.text_factory = lambda b: b.decode(errors="ignore")  # northwind specific
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    app.db_connection.close()
-
-
-# task 4.1
-
-@app.get("/categories", status_code=status.HTTP_200_OK)
-async def categories():
-    app.db_connection.row_factory = sqlite3.Row
-    data = app.db_connection.execute('''
-    SELECT CategoryID, CategoryName FROM Categories ORDER BY CategoryID;
-    ''').fetchall()
-    return {
-        "categories": [
-            {
-                "id": x['CategoryID'], "name": x["CategoryName"]} for x in data]}
-
-
-@app.get("/customers", status_code=status.HTTP_200_OK)
-async def customers():
-    app.db_connection.row_factory = sqlite3.Row
-    data = app.db_connection.execute('''
-    SELECT CustomerID, COALESCE(CompanyName, '') AS name, (COALESCE(Address, '') || ' ' || COALESCE(PostalCode, '') || 
-    ' ' || COALESCE(City, '') || ' ' || COALESCE(Country, '')) AS full_address FROM Customers ORDER BY UPPER(CustomerID);
-    ''').fetchall()
-    return {
-        "customers": [
-            {
-                "id": x['CustomerID'],
-                "name": x['name'],
-                "full_address": x['full_address']} for x in data]}
-
-
-# task 4.2
-
-@app.get("/products/{product_id}", status_code=status.HTTP_200_OK)
-async def single_product(product_id: int):
-    app.db_connection.row_factory = sqlite3.Row
-    data = app.db_connection.execute(
-        "SELECT ProductID, ProductName FROM Products WHERE ProductID = :product_id",
-        {'product_id': product_id}).fetchone()
-
-    if data:
-        return {"id": data["ProductID"], "name": data["ProductName"]}
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-
-# task 4.3
-
-@app.get("/employees", status_code=status.HTTP_200_OK)
-async def employees(limit: int = -1, offset: int = 0, order: str = 'EmployeeID'):
-
-    dict_orders = {'EmployeeID': 'EmployeeID', 'first_name': 'FirstName', 'last_name': 'LastName', 'city': 'City'}
-    if order not in dict_orders.keys():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
-    order = dict_orders[order]
-
-    app.db_connection.row_factory = sqlite3.Row
-    data = app.db_connection.execute(f'''
-                        SELECT EmployeeID, LastName, FirstName, City
-                        FROM Employees 
-                        ORDER BY {order}
-                        LIMIT ? 
-                        OFFSET ?;''', (limit, offset)).fetchall()
-
-    return {
-        "employees": [
-            {
-                "id": x['EmployeeID'],
-                "last_name": x['LastName'],
-                "first_name": x['FirstName'],
-                "city": x['City']} for x in data]}
-
-
-# task 4.4
-
-@app.get("/products_extended", status_code=status.HTTP_200_OK)
-async def products_extended():
-    app.db_connection.row_factory = sqlite3.Row
-    data = app.db_connection.execute('''
-    SELECT Products.ProductID, Products.ProductName, Categories.CategoryName, Suppliers.CompanyName 
-    FROM Products
-    JOIN Suppliers ON Products.SupplierID = Suppliers.SupplierID
-    JOIN Categories ON Products.CategoryID = Categories.CategoryID;
-    ''').fetchall()
-
-    return {
-        "products_extended":[
-                {
-                    "id": x['ProductID'],
-                    "name": x['ProductName'],
-                    "category": x['CategoryName'],
-                    "supplier": x['CompanyName']} for x in data]}
-
-
-# task 4.5
-
-@app.get("/products/{product_id}/orders", status_code=status.HTTP_200_OK)
-async def get_orders_by_id_product(product_id: int):
-    app.db_connection.row_factory = sqlite3.Row
-    product = app.db_connection.execute(
-        "SELECT ProductID FROM Products WHERE ProductID = :product_id;", {'product_id': product_id}).fetchone()
-    if not product:
-        raise HTTPException(status_code=404, detail="Id not found")
-
-    orders = app.db_connection.execute(f'''
-        SELECT Orders.OrderID, Customers.CompanyName, od.Quantity, 
-        ROUND((od.UnitPrice * od.Quantity) - (od.Discount * od.UnitPrice * od.Quantity), 2) AS total_price 
-        FROM Orders JOIN 'Order Details' AS od on Orders.OrderID = od.OrderID 
-        JOIN Products on od.ProductID = Products.ProductID
-        LEFT JOIN Customers on Orders.CustomerID = Customers.CustomerID 
-        WHERE Products.ProductID = {product_id} 
-        ORDER BY Orders.OrderID;
-        ''').fetchall()
-
-    return {
-        "orders": [
-            {
-                "id": x["OrderID"],
-                "customer": x["CompanyName"],
-                "quantity": x["Quantity"],
-                "total_price": x["total_price"]} for x in orders]}
-
-
-# task 4.6
-
-class Category(BaseModel):
+class Patient(BaseModel):
+    id: Optional[int]
     name: str
+    surname: str
+    register_date: Optional[date]
+    vaccination_date: Optional[date]
+
+    def __init__(self, **data):
+        super().__init__(
+            register_date=datetime.now().date(),
+            vaccination_date=datetime.now().date()
+                             + timedelta(
+                days=Patient.vaccination_timedelta(
+                    data.get("name"), data.get("surname")
+                )
+            ),
+            **data
+        )
+
+    @classmethod
+    def vaccination_timedelta(cls, name, surname):
+        name_letters = "".join(filter(str.isalpha, name))
+        surname_letters = "".join(filter(str.isalpha, surname))
+        """
+        Przykład z uzyciem regexp'a:
+        import re
+        regex = re.compile(r'[A-Za-z]+') // tylko litery! Uzycie \w przepuszcza tez cyfry oraz podloge
+        name_letters = "".join(filter(regex.match, name))
+        surname_letters = "".join(filter(regex.match, surname))       
+        """
+        return len(name_letters) + len(surname_letters)
 
 
-@app.post("/categories", status_code=status.HTTP_201_CREATED)
-async def categories_add(category: Category):
-    cursor = app.db_connection.execute(
-        "INSERT INTO Categories (CategoryName) VALUES (?)", (category.name, ))
-    app.db_connection.commit()
-    new_category_id = cursor.lastrowid
-    app.db_connection.row_factory = sqlite3.Row
-    category = app.db_connection.execute(
-        """SELECT CategoryID AS id, CategoryName AS name
-         FROM Categories WHERE CategoryID = ?""",
-        (new_category_id, )).fetchone()
-
-    return category
+app = FastAPI()
+app.counter: int = 1
+app.storage: Dict[int, Patient] = {}
 
 
-@app.put("/categories/{id}", status_code=status.HTTP_200_OK)
-async def category_update(category: Category, id: int):
-    cursor = app.db_connection.execute("""UPDATE Categories 
-                                          SET CategoryName = ? 
-                                          WHERE CategoryID = ?""", (category.name, id))
-    app.db_connection.commit()
-    cursor.row_factory = sqlite3.Row
-    created_category = cursor.execute("""SELECT CategoryID AS id, CategoryName AS name 
-                                         FROM Categories
-                                         WHERE CategoryID = :id""", {"id": id}).fetchone()
-    if created_category:
-        return created_category
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+@app.get("/")
+def read_root():
+    return {"message": "Hello world!"}
 
 
-@app.delete("/categories/{id}", status_code=status.HTTP_200_OK)
-async def category_delete(id: int):
-    cursor = app.db_connection.execute(
-        "DELETE FROM Categories WHERE CategoryID = ?;", (id, )
-    )
-    app.db_connection.commit()
+@app.api_route(
+    path="/method", methods=["GET", "POST", "DELETE", "PUT", "OPTIONS"], status_code=200
+)
+def read_request(request: Request, response: Response):
+    request_method = request.method
 
-    if cursor.rowcount < 1:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return {"deleted": cursor.rowcount}
+    if request_method == "POST":
+        response.status_code = status.HTTP_201_CREATED
+
+    return {"method": request_method}
+
+
+@app.get("/auth")
+def auth_request(password: str = "", password_hash: str = ""):
+    authorized = False
+    if password and password_hash:
+        phash = hashlib.sha512(bytes(password, "utf-8")).hexdigest()
+        authorized = phash == password_hash
+
+    if authorized:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    else:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+"""
+Przykładowe inputy dla zadania nr. 4 i 5:
+{"name": "Jan", "surname": "Nowak 2"}
+{"name": "Jan", "surname": "Nowak-Jezioranski"}
+{"name": "Jan", "surname": "!@#$%^&*()1234567890"}
+"""
+
+
+@app.post("/register", status_code=201)
+def create_patient(patient: Patient):
+    patient.id = app.counter
+    app.storage[app.counter] = patient
+    app.counter += 1
+    return patient
+
+
+@app.get("/patient/{patient_id}")
+def show_patient(patient_id: int):
+    if patient_id < 1:
+        raise HTTPException(status_code=400, detail="Invalid patient id")
+
+    if patient_id not in app.storage:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    return app.storage.get(patient_id)
