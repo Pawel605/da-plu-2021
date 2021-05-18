@@ -6,3 +6,4 @@ FastAPI-Mako==0.6.2
 Jinja2==2.11.3
 SQLAlchemy~=1.4.15
 greenlet~=1.1.0
+psycopg2-binary==2.8.6
