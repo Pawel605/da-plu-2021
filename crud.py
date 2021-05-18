@@ -36,3 +36,10 @@ def get_suppliers_products(db: Session, supplier_id: int):
         .filter(models.Product.SupplierID == supplier_id) \
         .order_by(models.Product.ProductID.desc()).all()
 
+
+# task 5.3
+def add_supplier(db, supplier: models.Supplier):
+    db.add(supplier)
+    db.commit()
+    pass
+
