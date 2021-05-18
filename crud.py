@@ -49,12 +49,13 @@ def create_supplier(db: Session, new_supplier: schemas.NewSupplier):
 
 
 # task 5.4
-def update_supplier(db: Session, id: int, supplier_update: schemas.SupplierUpdate):
-    properties_to_update = {key: value for key, value in supplier_update.dict().items() if value is not None}
-    update_statement = update(models.Supplier)\
-        .where(models.Supplier.SupplierID == id) \
-        .values(**properties_to_update)
-    db.execute(update_statement)
-    db.commit()
-    return get_supplier(db, id)
+def update_supplier(db: Session, supplier_id: int, supplier_update: schemas.SupplierUpdate):
+    update_attributes = {key: value for key, value in supplier_update.dict(exclude={'supplier_id'}).items()
+                         if value is not None}
+    if update_attributes != {}:
+        db.execute(update(models.Supplier).where(models.Supplier.SupplierID == supplier_id).
+                   values(**update_attributes))
+        db.commit()
+
+    return get_supplier(db, supplier_id=supplier_id)
 
