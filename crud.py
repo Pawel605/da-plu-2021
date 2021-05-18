@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import func
 
 import models
+import schemas
 
 
 def get_shippers(db: Session):
@@ -38,8 +40,10 @@ def get_suppliers_products(db: Session, supplier_id: int):
 
 
 # task 5.3
-def add_supplier(db, supplier: models.Supplier):
-    db.add(supplier)
+def create_supplier(db: Session, new_supplier: schemas.NewSupplier):
+    highest_id = db.query(func.max(models.Supplier.SupplierID)).scalar()
+    new_supplier.SupplierID = highest_id + 1
+    db.add(models.Supplier(**new_supplier.dict()))
     db.commit()
-    pass
+    return get_supplier(db, highest_id + 1)
 
