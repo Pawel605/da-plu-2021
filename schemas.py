@@ -33,8 +33,7 @@ class SupplierExtended(BaseModel):
     Fax: Optional[constr(max_length=24)] = None
     HomePage: Optional[str] = None
 
-
-class Config:
+    class Config:
         orm_mode = True
 
 
@@ -51,4 +50,3 @@ class NewSupplier(BaseModel):
 
     class Config:
         orm_mode = True
-

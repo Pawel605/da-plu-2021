@@ -1,40 +1,29 @@
-from sqlalchemy import (
-    CHAR,
-    Column,
-    Date,
-    Float,
-    Integer,
-    LargeBinary,
-    SmallInteger,
-    String,
-    Table,
-    Text,
-    text,
-    ForeignKey,
-)
+# coding: utf-8
+from sqlalchemy import CHAR, Column, Date, Float, Integer, LargeBinary, SmallInteger, String, Table, Text, text, \
+    ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.sqltypes import NullType
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 metadata = Base.metadata
-products = relationship('Product', back_populates='category')
 
 
 class Category(Base):
-    __tablename__ = "categories"
+    __tablename__ = 'categories'
 
     CategoryID = Column(SmallInteger, primary_key=True, server_default=text("nextval('categories_categoryid_seq'::regclass)"))
     CategoryName = Column(String(15), nullable=False)
     Description = Column(Text)
     Picture = Column(LargeBinary)
 
+    products = relationship('Product', back_populates='category')
+
 
 class Customercustomerdemo(Base):
-    __tablename__ = "customercustomerdemo"
+    __tablename__ = 'customercustomerdemo'
 
-    CustomerID = Column(NullType, primary_key=True, nullable=False)
-    CustomerTypeID = Column(NullType, primary_key=True, nullable=False)
+    CustomerID = Column(CHAR(6), primary_key=True, nullable=False)
+    CustomerTypeID = Column(CHAR(6), primary_key=True, nullable=False)
 
 
 class Customerdemographic(Base):
